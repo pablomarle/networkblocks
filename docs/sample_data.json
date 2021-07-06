@@ -1,0 +1,135 @@
+{
+	"custom_data": [
+		{
+			"uuid": "",
+			"label": "",
+			"type": "",   <- Can be string, integer, float, options(strings) and json
+			"range": [low, high],   <- For integer and float, defines the range of values acceptable
+			"options": [],     <- options (for options type)
+			"max_len": 1, <- For string, maximum length of the string
+			"default": "default_value",
+			"multivalue": false,   <- Can this custom data have multiple values?
+		}
+	],
+	"location_category": [
+		{
+			"uuid": "",
+			"name": "",
+			"description": "",
+			"custom_data": [], <- list of uuids of custom data that will be available for a location
+		}
+	],
+	"asset_category": [
+		{
+			"uuid": "",
+			"name": "",
+			"description": "",
+			"custom_data": [], <- list of uuids of custom data that will be available for an asset
+		}
+	],
+	"documents": [
+		{
+			"uuid": "",
+			"name": "",
+			"description": "",
+			"versions": [
+				{
+					"author": "",
+					"timestamp": "",
+					"version": "",
+				},
+			],
+		}
+	],
+	"entities": [
+		{
+			"uuid": "",
+			"name": "",
+			"description": "",
+		}
+	],
+	"locations": [
+		{
+			"uuid": "",
+			"name": "",
+			"address": "",
+			"zip": "",
+			"city": "",
+			"state": "",
+			"country": "",
+			"description": "",
+			"category": "",
+			"custom_data": {},
+			"documents": [],   <- List of uuids of documents.
+			"docu_links": [], <- List of links
+		}
+	],
+	"environments": [
+		{
+			"uuid": "",
+			"name": "",
+			"description": "",
+			"custom_data": {},
+			"documents": [],   <- List of uuids of documents.
+			"docu_links": [], <- List of links
+		}
+	],
+	"assets": [
+		{
+			"uuid": "",
+			"sn": "ABC123",
+			"vendor": "juniper",
+			"model": "aaa",
+			"category": "", <- Points to an asset category
+			"value": 100,
+			"dates": {
+				"created": timestamp,
+				"retired": timestamp,
+			},
+			"owner": "",   <- Points to an entity uuid
+			"location": "" <- Points to a location uuid
+			"custom_data": {},
+			"documents": [],   <- List of uuids of documents.
+			"docu_links": [], <- List of links
+			"inventory": [
+				{
+					"sn": "",
+					"vendor": "",
+					"model": "",
+					"type": "power",
+				},
+				{
+					"sn": "",
+					"vendor": "",
+					"model": "",
+					"type": "card",
+					"inventory": [...],
+				},
+				{
+					"sn": "",
+					"vendor": "",
+					"model": "",
+					"type": "port",
+					"portinfo": {
+						"name": "Ethernet1",
+						"transceiver": "null or string"
+					}
+				}
+			]
+		}
+	],
+	"devices": [
+		{
+			"uuid": "",
+			"sn": "ABC123",
+			"name": "",
+			"mgt_ip": "",
+			"environment": "",
+			"snmp_community": "",
+
+			"custom_data": {},
+			"documents": [],   <- List of uuids of documents.
+			"docu_links": [], <- List of links
+		},
+	],
+}

@@ -1,0 +1,31 @@
+<div class="appmenu">
+    <a href="/admin/users">Users</a>
+    <a href="/admin/groups">Groups</a>
+    <a href="/admin/settings">User Settings</a>
+</div>
+<div class="app">
+    <button id="new_user" class="button_new form_button">New User</button>
+    <table class="datatable">
+        <caption>List of Users</caption>
+        <thead>
+            <tr>
+                <th>E-Mail</th>
+                <th>Name</th>
+                <th>Last Name</th>
+                <th>Groups</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="usertable_body">
+        </tbody>
+        <tfoot>
+            <tr>
+                <td><input placeholder="Filter by e-mail"></input></td>
+                <td><input placeholder="Filter by name"></input></td>
+                <td><input placeholder="Filter by lastname"></input></td>
+                <td><input placeholder="Filter by groups"></input></td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

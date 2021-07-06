@@ -1,0 +1,8 @@
+{
+    "cookie_secret": "hsf&HuGYtfv65$",
+    "socket": {
+        "port": 3000
+    },
+    "userdb": "data/user.json",
+    "db": "data/db.json"
+}

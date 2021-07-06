@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+    <head>
+{{#if title }}
+        <title>{{ title }}</title>
+{{/if}}
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/static/css/main.css">
+{{#each custom_js}}
+        <script src="/static/js/{{ this }}"></script>
+{{/each}}
+{{#each custom_css}}
+        <link rel="stylesheet" href="/static/css/{{ this }}">
+{{/each}}
+{{#if session }}
+        <script>
+            const USERDATA = {
+                user: "{{{ session.user }}}",
+                name: "{{{ session.name }}}",
+                lastname: "{{{ session.lastname }}}",
+            }
+        </script>
+{{/if}}
+    </head>
+{{#if custom_js}}
+    <body onload="main()">
+{{else}}
+    <body>
+{{/if}}
+{{#unless disable_menu}}
+        <div id="menu">
+{{#if session }}
+            <a class="menu_item" href="/profile">
+                <img src="/static/icons/user.png" class="menu_img" title="User">
+            </a>
+{{/if}}
+            <a class="menu_item" href="/">
+                <img src="/static/icons/home.png" class="menu_img" title="Home">
+            </a>
+{{#if session }}
+            <a class="menu_item" href="/logout">
+                <img src="/static/icons/logout.png" class="menu_img" title="Log Out">
+            </a>
+{{/if}}
+        </div>
+{{/unless}}
+        <div id="content">
+            {{{ body }}}
+        </div>
+    </body>
+</html>
