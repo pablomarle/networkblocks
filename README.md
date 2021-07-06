@@ -1,4 +1,4 @@
-# networkblocks
+# NetworkBlocks
 Asset manager, inventory, IPAM, config management and monitoring for network devices (and servers).
 
 NetworkBlocks will be a web application we can use to manage all devices in our network. It will have:
