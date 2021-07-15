@@ -174,18 +174,26 @@ button:active {
     margin: auto;
     width: 100%;
     border-collapse: collapse;
+    font-size: 14px;
 }
 
 .datatable caption {
     font-weight: bold;
-    font-size: 15px;
+    font-size: 12px;
     margin: 5px 10px;
     text-align: left;
 }
 
+.datatable_pager {
+    float: right;
+}
+
+.datatable tbody tr {
+    width: 100%;
+}
 .datatable tbody td {
     border: 1px solid rgb(29,182,255);
-    padding: 5px 2px;
+    padding: 2px 2px;
     text-align: left;
     padding-left: 10px;
 }
@@ -292,3 +300,6 @@ button:active {
     color: #800;
 }
 
+.ff_multiselect_entry {
+    cursor: pointer;
+}

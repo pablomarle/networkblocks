@@ -9,8 +9,8 @@ function main() {
         DOM.get_id("lastname").value = result.lastname;
         let dom_groups = document.getElementById("groups");
 
-        for(let group of result.groups) {
-            DOM.add_div(dom_groups, group, null, "form_list_element");
+        for(let group_id in result.groups) {
+            DOM.add_div(dom_groups, result.groups[group_id], null, "form_list_element");
         }
 
         DOM.set_click("change_data", () => {

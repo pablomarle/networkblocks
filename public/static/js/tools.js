@@ -6,8 +6,13 @@ function post(url, data, callback) {
         },
         body: JSON.stringify(data),
     })
-    .then(response => response.json())
-    .then(data => callback(null, data))
+    .then(response => {
+        if(response.status === 500)
+            callback("Internal Server Error");
+        else
+            return response.json();
+    })
+    .then(data => { if(data) callback(null, data) })
     .catch((error) => {
         callback(error)
     });
@@ -20,8 +25,13 @@ function get(url, callback) {
             'Content-Type': 'application/json',
         },
     })
-    .then(response => response.json())
-    .then(data => callback(null, data))
+    .then(response => {
+        if(response.status === 500)
+            callback("Internal Server Error");
+        else
+            return response.json();
+    })
+    .then(data => { if(data) callback(null, data) })
     .catch((error) => {
         callback(error)
     });    

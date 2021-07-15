@@ -59,6 +59,12 @@ function setup_routes() {
         session: user.get_session_data(req),
     }));
 
+    data.app.get('/admin/groups', (req, res) => res.render("users", {
+        title: "NetworkMaps Groups",
+        custom_js: ["dom.js", "tools.js", "groups.js"],
+        session: user.get_session_data(req),
+    }));
+
     user.setup_routes(data.app);
 }
 
@@ -66,14 +72,20 @@ function setup_error_handling() {
     // custom 404 page
     data.app.use((req, res) => {
         res.status(404);
-        res.render('404');
+        if(req.headers["content-type"] === "application/json")
+            res.json({error: "Page not found"})
+        else
+            res.render('404');
     })
 
     // custom 500 page
     data.app.use((err, req, res, next) => {
         console.error(err.message);
         res.status(500);
-        res.render('500');
+        if(req.headers["content-type"] === "application/json")
+            res.json({error: "Internal server error"})
+        else
+            res.render('500');
     })
 }
 

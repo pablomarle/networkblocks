@@ -3,12 +3,13 @@ const crypto = require("crypto");
 
 const validator = require("./validator")
 const nm_sendmail = require("./nm_sendmail")
+const tools = require("./tools")
 
 const PWD_VALID_CHARS = "1234567890@$!%*?&qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM"
 const PWD_LENGTH = 12
 const SALT_LENGTH = 16
 
-const VALID_PERMISSIONS = new Set(["super_user", "users_rw", "users_ro"]);
+const VALID_PERMISSIONS = new Set(["super_user", "users_rw", "users_ro", "ipam_rw", "ipam_ro", "assets_rw", "assets_ro"]);
 
 let config = null;
 let userdb = null;
@@ -112,6 +113,7 @@ function logout(session_id) {
 function create_user(email, password, name, lastname) {
     if(!validator.validate_email(email))
         return "Invalid email address.";
+
     email = email.toLowerCase();
 
     if(email in userdb.users)
@@ -122,7 +124,6 @@ function create_user(email, password, name, lastname) {
         return "Invalid last name.";
     if(!validator.validate_password(password))
         return "Invalid password.";
-
 
     let salt = generateSalt();
     let hash = generateHash(password, salt);
@@ -145,6 +146,9 @@ function activate_user(email, active) {
 
     if(!(email in userdb.users))
         return "Invalid username.";
+
+    if(email === config.initial_admin_email)
+        return("Can't change initial admin user");
 
     if(typeof active !== "boolean")
         return "Invalid activate option";
@@ -227,6 +231,8 @@ function change_user_groups(email, groups) {
 
     if(!(email in userdb.users))
         return "User does not exist.";
+    if(email === config.initial_admin_email)
+        return("Can't change initial admin user groups");
     if(!Array.isArray(groups))
         return "Invalid group list";
     for(let i = 0; i < groups.length; i++)
@@ -238,24 +244,33 @@ function change_user_groups(email, groups) {
 
 function create_group(name, description) {
     if(!validator.validate_name(name))
-        return "Invalid name";
+        return ["Invalid name", null];
 
     if(!validator.validate_description(description))
-        return "Invalid name";
+        return ["Invalid description", null];
 
-    if(name in userdb.groups)
-        return "Name already exists";
+    for(let group_id in userdb.groups) {
+        if(userdb.groups[group_id].name === name)
+            return ["Name already exists", null];
+    }
 
-    userdb.groups[name] = {
+    let group_id = tools.generate_id(userdb.groups);
+        
+    userdb.groups[group_id] = {
+        name: name,
         description: description,
         permissions: [],
     }
+
+    return [null, group_id];
 }
 
-function update_group_permissions(name, new_permissions) {
-    if(!(name in userdb.groups))
+function update_group_permissions(id, new_permissions) {
+    if(!(id in userdb.groups))
         return "Invalid group";
 
+    if(userdb.groups[id].name === "GlobalAdmin")
+        return "Can't change Global Admin group";
     if(!Array.isArray(new_permissions))
         return "Invalid permission list";
 
@@ -264,28 +279,46 @@ function update_group_permissions(name, new_permissions) {
             return `Permission ${new_permissions[i]} is invalid`;
     }
 
-    userdb.groups[name].permissions = Array.from(new Set(new_permissions));
+    userdb.groups[id].permissions = Array.from(new Set(new_permissions));
 }
 
-function update_group_description(name, new_description) {
-    if(!(name in userdb.groups))
+function update_group(id, new_name, new_description) {
+    if(!(id in userdb.groups))
         return "Invalid group";
+
+    if(userdb.groups[id].name === "GlobalAdmin")
+        return "Can't change Global Admin group";
+    
+    if(new_name === "GlobalAdmin")
+        return "Reserved name";
+
+    if(!validator.validate_name(new_name))
+        return "Invalid name";
 
     if(!validator.validate_description(new_description))
         return "Invalid description";
 
-    userdb.groups[name].description = new_description;
+    for(let group_id in userdb.groups) {
+        if(userdb.groups[group_id].name === new_name)
+            return "Name already exists";
+    }
+
+    userdb.groups[id].name = new_name;
+    userdb.groups[id].description = new_description;
 }
 
-function delete_group(name) {
-    if(!(name in userdb.groups))
+function delete_group(id) {
+    if(!(id in userdb.groups))
         return "Invalid group";
 
-    delete userdb.groups[name];
+    if(userdb.groups[id].name === "GlobalAdmin")
+        return "Can't change Global Admin group";
+
+    delete userdb.groups[id];
 
     // Remove permission from groups
     for(let email in userdb.users) {
-        let i = userdb.users[email].groups.indexOf(name);
+        let i = userdb.users[email].groups.indexOf(id);
         if(i !== -1)
             userdb.users[email].groups.splice(i, 1);
     }
@@ -319,16 +352,16 @@ function is_user_allowed(req, permissions, users_allowed = []) {
     }
 
     for(let i = 0; i < userdb.users[session.user].groups.length; i++) {
-        let group_name = userdb.users[session.user].groups[i];
+        let group_id = userdb.users[session.user].groups[i];
 
-        if(!(group_name in userdb.groups))
+        if(!(group_id in userdb.groups))
             continue;
-        if(userdb.groups[group_name].permissions.indexOf("super_user") !== -1)
+        if(userdb.groups[group_id].permissions.indexOf("super_user") !== -1)
             return true;
 
         for(let i = 0; i < permissions.length; i++) {
             let permission = permissions[i];
-            if(userdb.groups[group_name].permissions.indexOf(permission) !== -1)
+            if(userdb.groups[group_id].permissions.indexOf(permission) !== -1)
                 return true;
         }
     }
@@ -370,10 +403,15 @@ function view_users_get(req, res) {
     if(!(email in userdb.users))
         return res.status(404).json({error: "User not found."})
 
+    let groups = {}
+    for(let group_id of userdb.users[email].groups) {
+        groups[group_id] = userdb.groups[group_id].name;
+    }
+
     let result = {
         name: userdb.users[email].name,
         lastname: userdb.users[email].lastname,
-        groups: userdb.users[email].groups,
+        groups: groups,
         active: userdb.users[email].active,
     }
     return res.status(200).json(result);
@@ -409,7 +447,7 @@ function view_users_add(req, res) {
 /* **************************************************
  * Deactivates a user
  * Requires super_user or users_rw permission
- * Parameters: email
+ * Parameters: email, active
  */
 function view_users_activate(req, res) {
     if(!is_user_allowed(req, ["users_rw"]))
@@ -595,10 +633,11 @@ function view_groups_list(req, res) {
         return res.status(403).json({error: "You are not authorized."})
 
     let result = {};
-    for(let name in userdb.groups)
-        result[name] = {
-            description: userdb.groups[name].description,
-            permissions: userdb.groups[name].permissions,
+    for(let id in userdb.groups)
+        result[id] = {
+            name: userdb.groups[id].name,
+            description: userdb.groups[id].description,
+            permissions: userdb.groups[id].permissions,
         }
 
     res.status(200).json(result);
@@ -617,20 +656,20 @@ function view_groups_add(req, res) {
     if(!validator.validate_api_call(req))
         return res.status(400).json({error: "Invalid API call."})
 
-    let result = create_group(req.body.name, req.body.description);
+    let [err, group_id] = create_group(req.body.name, req.body.description);
 
-    if(result) {
+    if(err) {
         // There was an error
-        return res.status(400).json({error: result});
+        return res.status(400).json({error: err});
     }
 
-    res.status(200).json({});
+    res.status(200).json({id: group_id});
 }
 
 /* **************************************************
  * Delete a group
  * Parameters:
- * - name
+ * - id
  */
 function view_groups_delete(req, res) {
     if(!is_user_allowed(req, ["users_rw"]))
@@ -639,7 +678,7 @@ function view_groups_delete(req, res) {
     if(!validator.validate_api_call(req))
         return res.status(400).json({error: "Invalid API call."})
 
-    let result = delete_group(req.body.name);
+    let result = delete_group(req.body.id);
 
     if(result) {
         // There was an error
@@ -650,19 +689,20 @@ function view_groups_delete(req, res) {
 }
 
 /* **************************************************
- * Modifies the description of a group
+ * Modifies the name and description of a group
  * Parameters:
+ * - id
  * - name
  * - description
  */
-function view_groups_description(req, res) {
+function view_groups_update(req, res) {
     if(!is_user_allowed(req, ["users_rw"]))
         return res.status(403).json({error: "You are not authorized."})
 
     if(!validator.validate_api_call(req))
         return res.status(400).json({error: "Invalid API call."})
 
-    let result = update_group_description(req.body.name, req.body.description);
+    let result = update_group(req.body.id, req.body.name, req.body.description);
 
     if(result) {
         // There was an error
@@ -675,7 +715,7 @@ function view_groups_description(req, res) {
 /* **************************************************
  * Modifies the permissions of a group
  * Parameters:
- * - name
+ * - id
  * - permissions
  */
 function view_groups_permissions(req, res) {
@@ -685,7 +725,7 @@ function view_groups_permissions(req, res) {
     if(!validator.validate_api_call(req))
         return res.status(400).json({error: "Invalid API call."})
 
-    let result = update_group_permissions(req.body.name, req.body.permissions);
+    let result = update_group_permissions(req.body.id, req.body.permissions);
 
     if(result) {
         // There was an error
@@ -712,7 +752,7 @@ function setup_routes(app) {
     app.get('/api/groups', view_groups_list);
     app.post('/api/groups/add', view_groups_add);
     app.post('/api/groups/delete', view_groups_delete);
-    app.post('/api/groups/description', view_groups_description);
+    app.post('/api/groups/update', view_groups_update);
     app.post('/api/groups/permissions', view_groups_permissions);
 }
 
@@ -735,6 +775,7 @@ function initialize(app_config) {
         }
     }
     catch (e) {
+        let id;
         console.log(`Failed to open ${ config.userdb } as userdb: ${e.message}`);
         console.log("\n*****************************************************")
         console.log(`Creating empty userdb.`);
@@ -749,13 +790,13 @@ function initialize(app_config) {
         let err = create_user(config.initial_admin_email, "Admin123$", "Administrator", " ");
         if(err)
             throw "Couldn't create admin user: " + err;
-        err = create_group("GlobalAdmin", "Default global administrators");
+        [err, id] = create_group("GlobalAdmin", "Default global administrators");
         if(err)
             throw "Couldn't create admin user: " + err;
-        err = change_user_groups(config.initial_admin_email, ["GlobalAdmin"]);
+        err = change_user_groups(config.initial_admin_email, [id]);
         if(err)
             throw "Couldn't create admin user: " + err;
-        err = update_group_permissions("GlobalAdmin", ["super_user"]);
+        err = update_group_permissions(id, ["super_user"]);
         if(err)
             throw "Couldn't create admin user: " + err;
 
