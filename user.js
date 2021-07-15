@@ -478,11 +478,11 @@ function view_users_activate(req, res) {
  * - lastname
  */
 function view_users_update(req, res) {
-    if(!is_user_allowed(req, ["users_rw"]))
-        return res.status(403).json({error: "You are not authorized."})
-
     if(!validator.validate_api_call(req))
         return res.status(400).json({error: "Invalid API call."})
+
+    if(!is_user_allowed(req, ["users_rw"]) && (req.body.email !== userdb.sessions[req.session_id].user))
+        return res.status(403).json({error: "You are not authorized."})
 
     let result = change_user_details(req.body.email, req.body.name, req.body.lastname);
 

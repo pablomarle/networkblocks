@@ -47,7 +47,7 @@ function show_groups_form(data) {
         let groups = [];
         for(let group_id in form_result.groups)
             groups.push(group_id);
-            
+
         post("/api/users/groups", {
             email: data.email,
             groups: groups,
@@ -123,7 +123,11 @@ function show_activate_form(data) {
 function load_datatable() {
     get("/api/users", (err, result) => {
         if(err) {
-            DOM.message("Error in Users", err, true);
+            DOM.message("Error getting Users", err, true);
+            return;
+        }
+        else if("error" in result) {
+            DOM.message("Error getting Users", result["error"], true);
             return;
         }
 
@@ -171,6 +175,10 @@ function load_groups() {
     get("/api/groups", (err, result) => {
         if(err) {
             DOM.message("Error getting Groups", err, true);
+            return;
+        }
+        else if("error" in result) {
+            DOM.message("Error getting Groups", result["error"], true);
             return;
         }
 

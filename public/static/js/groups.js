@@ -99,7 +99,11 @@ function show_delete_form(data) {
 function load_datatable() {
     get("/api/groups", (err, result) => {
         if(err) {
-            DOM.message("Error in Users", err, true);
+            DOM.message("Error in Groups", err, true);
+            return;
+        }
+        else if("error" in result) {
+            DOM.message("Error getting Groups", result["error"], true);
             return;
         }
 
