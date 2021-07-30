@@ -1,7 +1,9 @@
 const express = require('express')
 const expressHandlebars = require('express-handlebars')
 const cookieParser = require('cookie-parser')
-const user = require('./user')
+const user = require('./lib/user')
+const webdb = require('./lib/webdb')
+const tools = require('./lib/tools')
 
 let data = {
     app: null,
@@ -28,22 +30,34 @@ function authentication_middleware(req, res, next) {
     }
 }
 
+function logging_middleware(req, res, next) {
+    let username = "anonymous";
+    let session_data = user.get_session_data(req);
+    if(session_data && session_data.user)
+        username = session_data.user;
+
+    tools.log("Request", `${req.ip} ${req.session_id} ${username} ${req.method} ${req.path}`);
+    next();
+}
+
 function setup_routes() {
     data.app.use(authentication_middleware);
+    data.app.use(logging_middleware);
 
     data.app.get('/', (req, res) => res.render("main", {
-        title: "NetworkMaps Manager",
+        title: "NetworkBlocks Manager",
         custom_js: ["main.js"],
         session: user.get_session_data(req), 
     }));
+
     data.app.get('/login', (req, res) => res.render("login", {
-        title: "NetworkMaps Manager",
+        title: "NetworkBlocks Manager",
         custom_js: ["dom.js", "login.js"],
         disable_menu: true
     }));
 
     data.app.get('/profile', (req, res) => res.render("profile", {
-        title: "NetworkMaps - Profile",
+        title: "NetworkBlocks - Profile",
         custom_js: ["dom.js", "tools.js", "profile.js"],
         session: user.get_session_data(req),
     }));
@@ -54,18 +68,85 @@ function setup_routes() {
     });
 
     data.app.get('/admin/users', (req, res) => res.render("users", {
-        title: "NetworkMaps Users",
+        title: "NetworkBlocks Users",
         custom_js: ["dom.js", "tools.js", "users.js"],
         session: user.get_session_data(req),
     }));
 
     data.app.get('/admin/groups', (req, res) => res.render("users", {
-        title: "NetworkMaps Groups",
+        title: "NetworkBlocks Groups",
         custom_js: ["dom.js", "tools.js", "groups.js"],
         session: user.get_session_data(req),
     }));
 
+    data.app.get('/location/region', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Region",
+        custom_js: ["dom.js", "tools.js", "location_region.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/location/category', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Location",
+        custom_js: ["dom.js", "tools.js", "location_category.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/location', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Location",
+        custom_js: ["dom.js", "tools.js", "location.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/vendor', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Vendor",
+        custom_js: ["dom.js", "tools.js", "vendor.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/product/category', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Product Category",
+        custom_js: ["dom.js", "tools.js", "product_category.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/product', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Product",
+        custom_js: ["dom.js", "tools.js", "product.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/team', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Teams",
+        custom_js: ["dom.js", "tools.js", "team.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/currency', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Currencies",
+        custom_js: ["dom.js", "tools.js", "currency.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/po/status', (req, res) => res.render("asset", {
+        title: "NetworkBlocks PO Status",
+        custom_js: ["dom.js", "tools.js", "po_status.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/po', (req, res) => res.render("asset", {
+        title: "NetworkBlocks PO",
+        custom_js: ["dom.js", "tools.js", "po.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/asset', (req, res) => res.render("asset", {
+        title: "NetworkBlocks Asset",
+        custom_js: ["dom.js", "tools.js", "asset.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/device', (req, res) => res.render("not_implemented", {
+        title: "NetworkBlocks Asset",
+        custom_js: ["dom.js", "tools.js"],
+        session: user.get_session_data(req),
+    }));
+    data.app.get('/ip', (req, res) => res.render("not_implemented", {
+        title: "NetworkBlocks Asset",
+        custom_js: ["dom.js", "tools.js"],
+        session: user.get_session_data(req),
+    }));
+
     user.setup_routes(data.app);
+    webdb.setup_routes(data.app);
 }
 
 function setup_error_handling() {
@@ -92,6 +173,7 @@ function setup_error_handling() {
 function start_app(config) {
     data.config = config;
     user.initialize(config);
+    webdb.initialize(config, user);
 
     data.app = express()
 

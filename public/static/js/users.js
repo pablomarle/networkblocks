@@ -9,7 +9,7 @@ function show_edit_form(data) {
             lastname: {type: "string", label: "Last Name", value: data.lastname},
         }
     }, (form_result, update_form) => {
-        post("/api/users/update", {
+        REQUESTS.post("/api/users/update", {
             email: data.email,
             name: form_result.name,
             lastname: form_result.lastname,
@@ -48,7 +48,7 @@ function show_groups_form(data) {
         for(let group_id in form_result.groups)
             groups.push(group_id);
 
-        post("/api/users/groups", {
+        REQUESTS.post("/api/users/groups", {
             email: data.email,
             groups: groups,
         }, (err, post_result) => {
@@ -72,7 +72,7 @@ function show_pwdreset_form(data) {
         submit_label: "Reset",
         fields: {}
     }, (form_result, update_form) => {
-        post("/api/users/password_reset", {
+        REQUESTS.post("/api/users/password_reset", {
             email: data["email"],
         }, (err, post_result) => {
             if(err) {
@@ -102,7 +102,7 @@ function show_activate_form(data) {
         submit_label: label,
         fields: {}
     }, (form_result, update_form) => {
-        post("/api/users/activate", {
+        REQUESTS.post("/api/users/activate", {
             email: data.email,
             active: !data.active,
         }, (err, post_result) => {
@@ -121,7 +121,7 @@ function show_activate_form(data) {
 }
 
 function load_datatable() {
-    get("/api/users", (err, result) => {
+    REQUESTS.get("/api/users", (err, result) => {
         if(err) {
             DOM.message("Error getting Users", err, true);
             return;
@@ -172,7 +172,7 @@ function load_datatable() {
 }
 
 function load_groups() {
-    get("/api/groups", (err, result) => {
+    REQUESTS.get("/api/groups", (err, result) => {
         if(err) {
             DOM.message("Error getting Groups", err, true);
             return;
@@ -204,7 +204,7 @@ function main() {
                 lastname: {type: "string", label: "Last Name", value: ""},
             }
         }, (form_result, update_form) => {
-            post("/api/users/add", {
+            REQUESTS.post("/api/users/add", {
                 email: form_result.email,
                 name: form_result.name,
                 lastname: form_result.lastname,

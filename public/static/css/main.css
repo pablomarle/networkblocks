@@ -1,6 +1,7 @@
 html,body {
     margin: 0px; padding: 0px;
     font-family: "arial";
+    font-size: 12px;
 }
 
 .message_container {
@@ -92,6 +93,7 @@ html,body {
 
 .form_label {
     margin: 0 10px;
+    font-weight: bold;
 }
 
 .form_input_long {
@@ -107,6 +109,11 @@ html,body {
     padding: 2px 8px;
     background: #ddd;
     border-radius: 4px;
+}
+
+.form_link {
+    margin: 0px 40px;
+    display: block;
 }
 
 input {
@@ -218,8 +225,12 @@ button:active {
     font-size: 12px;
 }
 
+.datatable_link {
+    display: block;
+}
+
 .appmenu {
-    width: 15vw;
+    width: 10vw;
     border-right: 1px solid #eee;
     display: flex;
     flex-direction: column;
@@ -238,6 +249,9 @@ button:active {
     display: list-item;
     list-style-position: outside;
     list-style-type: "\2023";
+}
+.appsubmenu {
+    margin-left: 25px;
 }
 
 .app {
@@ -278,7 +292,9 @@ button:active {
 }
 
 .ff_close {
-    float: right;
+    position: absolute;
+    right: 0;
+    top: 0;
     cursor: pointer;
     margin-right: 4px;
     margin-left:10px;

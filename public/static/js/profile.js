@@ -1,5 +1,5 @@
 function main() {
-    post("/api/users/get", {email: USERDATA.user}, (err, result) => {
+    REQUESTS.post("/api/users/get", {email: USERDATA.user}, (err, result) => {
         if(err) {
             DOM.message("Error", err, true);
             return;
@@ -14,7 +14,7 @@ function main() {
         }
 
         DOM.set_click("change_data", () => {
-            post("/api/users/update", {
+            REQUESTS.post("/api/users/update", {
                     email: USERDATA.user,
                     name: DOM.get_value("name"),
                     lastname: DOM.get_value("lastname"),
@@ -42,7 +42,7 @@ function main() {
                 DOM.set_text(DOM.get_id("message_password_change"), "New passwords don't match.");
                 return;
             }
-            post("/api/users/password", {
+            REQUESTS.post("/api/users/password", {
                     email: USERDATA.user,
                     old_password: DOM.get_value("old_password"),
                     new_password: new_password,

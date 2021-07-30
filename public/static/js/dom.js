@@ -47,6 +47,13 @@ const DOM = {
         return DOM.add_element(e, "div", text, id, class_name);
     },
 
+    add_link: (e, text, url, id, class_name) => {
+        let element = DOM.add_element(e, "a", text, id, class_name);
+        element.target = "_blank";
+        element.href = url;
+        return element;
+    },
+
     add_span: (e, text, id, class_name) => {
         return DOM.add_element(e, "span", text, id, class_name);
     },
@@ -224,8 +231,16 @@ const DOM = {
                 else if(element.type === "list") {
                     let td = DOM.add_element(tr, "td");
                     for(let list_item of element.list) {
-                        let div = DOM.add_span(td, list_item.name, null, "datatable_listitem");
-                        td.appendChild(div);
+                        DOM.add_span(td, list_item.name, null, "datatable_listitem");
+                    }
+                    data[element.name] = element.list;
+                }
+                else if(element.type === "linklist") {
+                    if(!element.hidden) {
+                        let td = DOM.add_element(tr, "td");
+                        for(let list_item of element.list) {
+                            DOM.add_link(td, list_item.name, list_item.url, null, "datatable_link");
+                        }
                     }
                     data[element.name] = element.list;
                 }
@@ -250,7 +265,7 @@ const DOM = {
         return result_data;
     },
 
-    add_form: (form_data, callback) => {
+    add_form: (form_data, callback, read_only=false) => {
         let form_info = {};
 
         let container = DOM.add_div(document.body, null, null, "ff_container");
@@ -270,7 +285,16 @@ const DOM = {
             DOM.add_label(row, field_data.label, "ff_field_" + field_name, null, "form_label");
 
             if(field_data.type === "string") {
-                form_info[field_name] = DOM.add_input(row, field_data.value, "ff_field_" + field_name, "form_input_long");
+                if(read_only)
+                    DOM.add_div(row, field_data.value, "ff_field_" + field_name, "form_input_long");
+                else
+                    form_info[field_name] = DOM.add_input(row, field_data.value, "ff_field_" + field_name, "form_input_long");
+            }
+            else if(field_data.type === "select") {
+                if(read_only)
+                    DOM.add_div(row, field_data.options[field_data.value], "ff_field_" + field_name, "form_input_long");
+                else
+                    form_info[field_name] = DOM.add_select(row, field_data.options, field_data.value, null, "ff_multiselect_select");
             }
             else if(field_data.type === "multiselect") {
                 form_info[field_name] = field_data.value;
@@ -284,50 +308,61 @@ const DOM = {
                     }
                 }
 
-                ms_container.addEventListener("click", (ev) => {
-                    if(ev.target.classList.contains("ff_multiselect_entry")) {
-                        let group_id = ev.target.getAttribute("data-id");
-                        delete field_data.value[group_id];
+                if(!read_only) {
+                    ms_container.addEventListener("click", (ev) => {
+                        if(ev.target.classList.contains("ff_multiselect_entry")) {
+                            let group_id = ev.target.getAttribute("data-id");
+                            delete field_data.value[group_id];
+                            update_multiselect();
+                        }
+                    })
+
+                    row = DOM.add_div(form, null, null, "ff_row");
+                    DOM.add_label(row, field_data.label_add, null, null, "form_label");
+                    let select = DOM.add_select(row, field_data.options, null, null, "ff_multiselect_select");
+                    DOM.add_button(row, "Add", null, "form_button", () => {
+                        field_data.value[select.value] = field_data.options[select.value];
                         update_multiselect();
-                    }
-                })
-
-                row = DOM.add_div(form, null, null, "ff_row");
-                DOM.add_label(row, field_data.label_add, null, null, "form_label");
-                let select = DOM.add_select(row, field_data.options, null, null, "ff_multiselect_select");
-                DOM.add_button(row, "Add", null, "form_button", () => {
-                    field_data.value[select.value] = field_data.options[select.value];
-                    update_multiselect();
-                });
-
+                    });
+                }
                 update_multiselect();
-
+            }
+            else if(field_data.type === "links") {
+                row = DOM.add_div(form, null, null, "ff_row");
+                form_info[field_name] = [];
+                let links_container = DOM.add_div(row, null, null, "ff_links");
+                for(let link of field_data.value) {
+                    if(read_only) {
+                        let link_entry = DOM.add_link(links_container, link.name, link.url, null, "form_link");
+                    }
+                }
             }
         }
 
         let row = DOM.add_div(form, null, null, "ff_row");
-        DOM.add_button(row, form_data.submit_label, null, "form_button", () => {
-            let data = {};
-            for(let field_name in form_info) {
-                let field_data = form_data.fields[field_name];
-                if(field_data.type == "string")
-                    data[field_name] = form_info[field_name].value;
-                else if(field_data.type == "multiselect")
-                    data[field_name] = form_info[field_name];
-            }
+        if(!read_only) {
+            DOM.add_button(row, form_data.submit_label, null, "form_button", () => {
+                let data = {};
+                for(let field_name in form_info) {
+                    let field_data = form_data.fields[field_name];
+                    if((field_data.type == "string") || (field_data.type == "select"))
+                        data[field_name] = form_info[field_name].value;
+                    else if(field_data.type == "multiselect")
+                        data[field_name] = form_info[field_name];
+                }
 
-            let result = callback(data, (err) => {
-                if(err)
-                    DOM.set_text(error_dom, err);
-                else
-                    DOM.destroy(container);
-            });
-            if(result) {
-                DOM.set_text(error_dom, result);
-            }
-        })
-
-        DOM.add_button(row, "Cancel", null, "form_button", () => {DOM.destroy(container)});
+                let result = callback(data, (err) => {
+                    if(err)
+                        DOM.set_text(error_dom, err);
+                    else
+                        DOM.destroy(container);
+                });
+                if(result) {
+                    DOM.set_text(error_dom, result);
+                }
+            })
+        }
+        DOM.add_button(row, "Close", null, "form_button", () => {DOM.destroy(container)});
     },
 
     message: (title, text, isAlert) => {

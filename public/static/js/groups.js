@@ -17,7 +17,7 @@ function show_edit_form(data) {
             description: {type: "string", label: "Description", value: data.description},
         }
     }, (form_result, update_form) => {
-        post("/api/groups/update", {
+        REQUESTS.post("/api/groups/update", {
             id: data.id,
             name: form_result.name,
             description: form_result.description,
@@ -54,7 +54,7 @@ function show_permissions_form(data) {
         for(let permission in form_result.permissions)
             permissions.push(permission);
             
-        post("/api/groups/permissions", {
+        REQUESTS.post("/api/groups/permissions", {
             id: data.id,
             permissions: permissions,
         }, (err, post_result) => {
@@ -79,7 +79,7 @@ function show_delete_form(data) {
         submit_label: "Delete",
         fields: {}
     }, (form_result, update_form) => {
-        post("/api/groups/delete", {
+        REQUESTS.post("/api/groups/delete", {
             id: data["id"],
         }, (err, post_result) => {
             if(err) {
@@ -97,7 +97,7 @@ function show_delete_form(data) {
 }
 
 function load_datatable() {
-    get("/api/groups", (err, result) => {
+    REQUESTS.get("/api/groups", (err, result) => {
         if(err) {
             DOM.message("Error in Groups", err, true);
             return;
@@ -156,7 +156,7 @@ function main() {
                 description: {type: "string", label: "Description", value: ""},
             }
         }, (form_result, update_form) => {
-            post("/api/groups/add", {
+            REQUESTS.post("/api/groups/add", {
                 name: form_result.name,
                 description: form_result.description,
             }, (err, post_result) => {

@@ -2,7 +2,7 @@ function main()
 {
     document.getElementById("login").addEventListener("click", () => {
         let data = {
-            username: document.getElementById("username").value,
+            username: document.getElementById("username").value.toLowerCase().trim(),
             password: document.getElementById("password").value,
         }
         fetch("/api/users/login", {

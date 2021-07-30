@@ -1,4 +1,4 @@
-const config_manager = require('./config_manager')
+const config_manager = require('./lib/config_manager')
 const app = require('./app')
 
 const ARGS_HELP = `
