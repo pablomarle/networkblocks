@@ -16,4 +16,5 @@ NetworkBlocks will be a web application we can use to manage all devices in our 
 ## Current status
 
 I am in the early stages of development.
+You can see a working demo at: https://blocks.networkmaps.org User: readonly@networkmaps.org, Password: Password123$
 Are you interested in this project? Let me know at: pablo@networkmaps.org
