@@ -118,7 +118,7 @@ function main() {
             fields: {
                 name: {type: "string", label: "Name", value: ""},
                 description: {type: "multistring", label: "Description", value: ""},
-                email: {type: "string", label: "Team", value: ""},
+                email: {type: "string", label: "Email", value: ""},
                 links: {type: "links", label: "Links", value: []},
             }
         }, (form_result, update_form) => {

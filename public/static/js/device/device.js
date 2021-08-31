@@ -115,11 +115,9 @@ function load_datatable() {
                 {type: "text", text: options.device_status.data[result[id].fields.status], name: "status_name"},
                 //{type: "text", text: options.os_version.data[result[id].fields.os_version], name: "os_version_name"},
                 {type: "linklist", name: "links", list: result[id].fields.links},
-                {type: "doclist", name: "documents", docs: result[id].fields.documents, baseurl: `/api/db/${URL_KEY}/${id}/download/documents`},
                 {type: "actions", actions: [
                     {label: "🔍", description: "View", action: show_view_form },
                     {label: "🖋️", description: "Edit", action: show_edit_form },
-                    {label: "📄", description: "Manage Docs", action: show_docs_form },
                     {label: "☠️", description: "Delete", action: show_delete_form },
                 ]},
             ];
@@ -128,7 +126,7 @@ function load_datatable() {
 
         let table = {
             caption: `List of ${ELEMENT_NAME}s`,
-            head: ["Name", "Mgmt IP", "OS", "Environment", "Function", "Owner", "Status", "Links", "Docs", "Actions"],
+            head: ["Name", "Mgmt IP", "OS", "Environment", "Function", "Owner", "Status", "Links", "Actions"],
             body: table_data,
             filters: [ "name", "mgmt_ip", "osversion_name", "environment_name", "function_name", "owner_name", "status_name"],
         }
