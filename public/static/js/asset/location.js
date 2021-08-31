@@ -1,7 +1,7 @@
-let regions = null;
-let categories = null;
-let options_category = null;
-let options_region = null;
+options = {
+    location_category: {field: "name", data: null, null_allowed: false },
+    region: {field: "name", data: null, null_allowed: true },
+}
 
 function show_edit_form(data, read_only = false) {
     let title = `Edit ${data.name}`;
@@ -14,7 +14,7 @@ function show_edit_form(data, read_only = false) {
         fields: {
             name: {type: "string", label: "Name", value: data.name},
             code: {type: "string", label: "Code", value: data.code},
-            description: {type: "string", label: "Description", value: data.description},
+            description: {type: "multistring", label: "Description", value: data.description},
             address: {type: "string", label: "Address", value: data.address},
             city: {type: "string", label: "City", value: data.city},
             state: {type: "string", label: "State", value: data.state},
@@ -23,8 +23,9 @@ function show_edit_form(data, read_only = false) {
             contact_name: {type: "string", label: "Contact Name", value: data.contact_name},
             contact_email: {type: "string", label: "Contact e-mail", value: data.contact_email},
             contact_phone: {type: "string", label: "Contact Phone", value: data.contact_phone},
-            category: {type: "select", label: "Category", options: options_category, value: data.category},
-            region: {type: "select", label: "Region", options: options_region, value: data.region},
+            category: {type: "select", label: "Category", options: options.location_category.data, value: data.category},
+            region: {type: "select", label: "Region", options: options.region.data, value: data.region},
+            links: {type: "links", label: "Links", value: data.links},
         }
 }, (form_result, update_form) => {
         REQUESTS.post(`/api/db/location/${data.id}`, {fields: {
@@ -41,6 +42,7 @@ function show_edit_form(data, read_only = false) {
             contact_phone: form_result.contact_phone,
             category: form_result.category,
             region: form_result.region,
+            links: form_result.links,
         }}, (err, post_result) => {
             if(err) {
                 update_form(err);
@@ -81,6 +83,14 @@ function show_view_form(data) {
     show_edit_form(data, true);
 }
 
+function show_docs_form(data) {
+    let docs_form = add_docs_management("location", data.id, "documents", data.documents, () => {
+        DOM.destroy(docs_form);
+        load_datatable();
+        show_docs_form(data);
+    });
+}
+
 function load_datatable() {
     REQUESTS.get("/api/db/location", (err, result) => {
         if(err) {
@@ -108,12 +118,15 @@ function load_datatable() {
                 {type: "text", text: result[id].fields.contact_email, name: "contact_email", hidden: true},
                 {type: "text", text: result[id].fields.contact_phone, name: "contact_phone", hidden: true},
                 {type: "text", text: result[id].fields.category, name: "category", hidden: true},
-                {type: "text", text: options_category[result[id].fields.category], name: "category_name", hidden: false},
+                {type: "text", text: options.location_category.data[result[id].fields.category], name: "category_name", hidden: false},
                 {type: "text", text: result[id].fields.region, name: "region", hidden: true},
-                {type: "text", text: options_region[result[id].fields.region], name: "region_name"},
+                {type: "text", text: options.region.data[result[id].fields.region], name: "region_name"},
+                {type: "linklist", name: "links", list: result[id].fields.links},
+                {type: "doclist", name: "documents", docs: result[id].fields.documents, baseurl: `/api/db/location/${id}/download/documents`},
                 {type: "actions", actions: [
                     {label: "🔍", description: "View", action: show_view_form },
                     {label: "🖋️", description: "Edit", action: show_edit_form },
+                    {label: "📄", description: "Manage Docs", action: show_docs_form },
                     {label: "☠️", description: "Delete", action: show_delete_form },
                 ]},
             ];
@@ -122,7 +135,7 @@ function load_datatable() {
 
         let table = {
             caption: "List of Locations",
-            head: ["Code", "Name", "City", "Country", "Category", "Region", "Actions"],
+            head: ["Code", "Name", "City", "Country", "Category", "Region", "Links", "Docs", "Actions"],
             body: table_data,
             filters: [ "code", "name", "city", "country", "category_name", "region_name"],
         }
@@ -132,49 +145,10 @@ function load_datatable() {
     });
 }
 
-function load_regions() {
-    REQUESTS.get("/api/db/region", (err, result) => {
-        if(err) {
-            DOM.message("Error", `Error loading regions: ${err}`);
-        }
-        else if("error" in result)
-            DOM.message("Error", `Error loading regions: ${result.error}`);
-
-        regions = result;
-        options_region = {};
-        for(let region_id in regions)
-            options_region[region_id] = regions[region_id].fields.name;
-
-        if(regions && categories) {
-            load_datatable();
-        }
-    });
-}
-
-function load_categories() {
-    REQUESTS.get("/api/db/location_category", (err, result) => {
-        if(err) {
-            DOM.message("Error", `Error loading categories: ${err}`);
-        }
-        else if("error" in result)
-            DOM.message("Error", `Error loading categories: ${result.error}`);
-
-        categories = result;
-        options_category = {};
-        for(let category_id in categories)
-            options_category[category_id] = categories[category_id].fields.name;
-
-        if(regions && categories) {
-            load_datatable();
-        }
-    });
-}
-
 function main() {
     DOM.get_id("menu_location").style.fontWeight = "bold";
 
-    load_regions();
-    load_categories();
+    load_options(options, load_datatable);
 
     let new_button = DOM.get_id("new_element");
 
@@ -186,7 +160,7 @@ function main() {
             fields: {
                 name: {type: "string", label: "Name", value: ""},
                 code: {type: "string", label: "Code", value: ""},
-                description: {type: "string", label: "Description", value: ""},
+                description: {type: "multistring", label: "Description", value: ""},
                 address: {type: "string", label: "Address", value: ""},
                 city: {type: "string", label: "City", value: ""},
                 state: {type: "string", label: "State", value: ""},
@@ -195,8 +169,9 @@ function main() {
                 contact_name: {type: "string", label: "Contact Name", value: ""},
                 contact_email: {type: "string", label: "Contact e-mail", value: ""},
                 contact_phone: {type: "string", label: "Contact Phone", value: ""},
-                category: {type: "select", label: "Category", options: options_category, value: ""},
-                region: {type: "select", label: "Region", options: options_region, value: ""},
+                category: {type: "select", label: "Category", options: options.location_category.data, value: ""},
+                region: {type: "select", label: "Region", options: options.region.data, value: ""},
+                links: {type: "links", label: "Links", value: []},
             }
         }, (form_result, update_form) => {
             REQUESTS.post("/api/db/location", {
@@ -213,6 +188,7 @@ function main() {
                 contact_phone: form_result.contact_phone,
                 category: form_result.category,
                 region: form_result.region,
+                links: form_result.links,
             }, (err, post_result) => {
                 if(err) {
                     update_form(err);

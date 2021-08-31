@@ -26,7 +26,7 @@ const DOM = {
         return etext;
     },
     
-    add_element: (e, type, text, id, class_name) => {
+    add_element: (e, type, text, id, class_name_list) => {
         let div = document.createElement(type);
         
         if(text)
@@ -35,8 +35,10 @@ const DOM = {
         if(id)
             div.id = id;
 
-        if(class_name)
-            div.classList.add(class_name);
+        if(class_name_list) {
+            for(let class_name of class_name_list.split(" "))
+                div.classList.add(class_name);
+        }
 
         e.appendChild(div);
 
@@ -66,6 +68,22 @@ const DOM = {
 
     add_input: (e, value, id, class_name, placeholder) => {
         let input = DOM.add_element(e, "input", null, id, class_name);
+        input.value = value;
+        if(placeholder)
+            input.placeholder = placeholder;
+
+        return input;
+    },
+
+    add_file: (e, name, id, class_name) => {
+        let input = DOM.add_element(e, "input", null, id, class_name);
+        input.type = "file";
+
+        return input;
+    },
+
+    add_textarea: (e, value, id, class_name, placeholder) => {
+        let input = DOM.add_element(e, "textarea", null, id, class_name);
         input.value = value;
         if(placeholder)
             input.placeholder = placeholder;
@@ -244,8 +262,18 @@ const DOM = {
                     }
                     data[element.name] = element.list;
                 }
+                else if(element.type === "doclist") {
+                    if(!element.hidden) {
+                        let td = DOM.add_element(tr, "td");
+                        for(let doc_id in element.docs) {
+                            DOM.add_link(td, element.docs[doc_id].title, `${element.baseurl}/${doc_id}`, null, "datatable_link");
+                        }
+                    }
+                    data[element.name] = element.docs;
+                }
                 else if(element.type === "actions") {
                     let td = DOM.add_element(tr, "td");
+                    td.style.width = "" + (32 * element.actions.length) + "px";
                     for(let action of element.actions) {
                         let button = DOM.add_button(td, action.label, null, null, () => {
                             action.action(data);
@@ -286,15 +314,26 @@ const DOM = {
 
             if(field_data.type === "string") {
                 if(read_only)
-                    DOM.add_div(row, field_data.value, "ff_field_" + field_name, "form_input_long");
+                    DOM.add_div(row, ""+field_data.value, "ff_field_" + field_name, "form_input_long");
                 else
-                    form_info[field_name] = DOM.add_input(row, field_data.value, "ff_field_" + field_name, "form_input_long");
+                    form_info[field_name] = DOM.add_input(row, field_data.value, "ff_field_" + field_name, "ff_input");
+            }
+            else if(field_data.type === "multistring") {
+                if(read_only)
+                    DOM.add_div(row, field_data.value, "ff_field_" + field_name, "ff_textarea_ro");
+                else
+                    form_info[field_name] = DOM.add_textarea(row, field_data.value, "ff_field_" + field_name, "ff_textarea");
+            }
+            else if(field_data.type === "upload") {
+                if(!read_only) {
+                    form_info[field_name] = DOM.add_file(row, null, null, "ff_input");
+                }
             }
             else if(field_data.type === "select") {
                 if(read_only)
                     DOM.add_div(row, field_data.options[field_data.value], "ff_field_" + field_name, "form_input_long");
                 else
-                    form_info[field_name] = DOM.add_select(row, field_data.options, field_data.value, null, "ff_multiselect_select");
+                    form_info[field_name] = DOM.add_select(row, field_data.options, field_data.value, null, "ff_input");
             }
             else if(field_data.type === "multiselect") {
                 form_info[field_name] = field_data.value;
@@ -320,7 +359,7 @@ const DOM = {
                     row = DOM.add_div(form, null, null, "ff_row");
                     DOM.add_label(row, field_data.label_add, null, null, "form_label");
                     let select = DOM.add_select(row, field_data.options, null, null, "ff_multiselect_select");
-                    DOM.add_button(row, "Add", null, "form_button", () => {
+                    DOM.add_button(row, "Add", null, null, () => {
                         field_data.value[select.value] = field_data.options[select.value];
                         update_multiselect();
                     });
@@ -329,12 +368,73 @@ const DOM = {
             }
             else if(field_data.type === "links") {
                 row = DOM.add_div(form, null, null, "ff_row");
-                form_info[field_name] = [];
                 let links_container = DOM.add_div(row, null, null, "ff_links");
-                for(let link of field_data.value) {
-                    if(read_only) {
-                        let link_entry = DOM.add_link(links_container, link.name, link.url, null, "form_link");
+                if(read_only) {
+                    for(let link of field_data.value) {
+                        DOM.add_link(links_container, link.name, link.url, null, "form_link");
                     }
+                }
+                else {
+                    let index = 0;
+
+                    let form_info_data = [];
+                    form_info[field_name] = form_info_data;
+                    let table = DOM.add_element(links_container, "table", null, null, "ff_table");
+                    let th = DOM.add_element(table, "thead");
+                    let tb = DOM.add_element(table, "tbody");
+                    let tf = DOM.add_element(table, "tfoot");
+
+                    // Add head
+                    let tr = DOM.add_element(th, "tr");
+                    DOM.add_element(tr, "td", "Name");
+                    DOM.add_element(tr, "td", "URL");
+                    DOM.add_element(tr, "td", "");
+                    
+                    let add_entry = (link) => {
+                        let tr = DOM.add_element(tb, "tr");
+                        let td_name = DOM.add_element(tr, "td");
+                        let td_url = DOM.add_element(tr, "td");
+                        let td_delete = DOM.add_element(tr, "td");
+                        let input_name = DOM.add_input(td_name, link.name);
+                        let input_url = DOM.add_input(td_url, link.url);
+                        let input_delete = DOM.add_button(td_delete, "-", null, null, (ev) => {
+                            let subindex = ev.target.getAttribute("data-index");
+                            form_info_data[subindex].active = false;
+                            DOM.destroy(form_info_data[subindex].tr);
+                            console.log(index);
+                        });
+                        input_delete.setAttribute("data-index", index);
+                        form_info[field_name].push({
+                            tr: tr,
+                            dom_name: input_name,
+                            dom_url: input_url,
+                            active: true,
+                        })
+                        index += 1;
+                    }
+
+                    // Add footer (new link)
+                    let tr_foot = DOM.add_element(th, "tr");
+                    let td_f_name = DOM.add_element(tr_foot, "td");
+                    let td_f_url = DOM.add_element(tr_foot, "td");
+                    let td_f_add = DOM.add_element(tr_foot, "td");
+                    let input_f_name = DOM.add_input(td_f_name, "");
+                    input_f_name.placeholder = "New link name";
+                    let input_f_url = DOM.add_input(td_f_url, "");
+                    input_f_url.placeholder = "New link URL";
+                    DOM.add_button(td_f_add, "+", null, null, (ev) => {
+                        add_entry({
+                            name: input_f_name.value,
+                            url: input_f_url.value,
+                        });
+                        input_f_name.value = "";
+                        input_f_url.value = "";
+                    });
+
+                    // Add body (existing links)
+                    for(let link of field_data.value) {
+                        add_entry(link);
+                    }    
                 }
             }
         }
@@ -345,10 +445,23 @@ const DOM = {
                 let data = {};
                 for(let field_name in form_info) {
                     let field_data = form_data.fields[field_name];
-                    if((field_data.type == "string") || (field_data.type == "select"))
+                    if((field_data.type === "string") || (field_data.type == "select") || (field_data.type === "multistring"))
                         data[field_name] = form_info[field_name].value;
-                    else if(field_data.type == "multiselect")
+                    else if(field_data.type === "multiselect")
                         data[field_name] = form_info[field_name];
+                    else if(field_data.type === "upload")
+                        data[field_name] = form_info[field_name].files[0];
+                    else if(field_data.type === "links") {
+                        data[field_name] = [];
+                        for(let entry of form_info[field_name]) {
+                            if(entry.active) {
+                                data[field_name].push({
+                                    name: entry.dom_name.value,
+                                    url: entry.dom_url.value,
+                                })
+                            }
+                        }
+                    }
                 }
 
                 let result = callback(data, (err) => {

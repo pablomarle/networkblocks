@@ -1,7 +1,7 @@
-let team = null;
-let status = null;
-let options_team = null;
-let options_status = null;
+options = {
+    team: {field: "name", data: null, null_allowed: false },
+    purchase_order_status: {field: "name", data: null, null_allowed: false },
+}
 
 function show_edit_form(data, read_only = false) {
     let title = `Edit ${data.name}`;
@@ -13,9 +13,10 @@ function show_edit_form(data, read_only = false) {
         submit_label: "Update",
         fields: {
             code: {type: "string", label: "Code", value: data.code},
-            description: {type: "string", label: "Description", value: data.description},
-            status: {type: "select", label: "Category", options: options_status, value: data.status},
-            team: {type: "select", label: "Region", options: options_team, value: data.team},
+            description: {type: "multistring", label: "Description", value: data.description},
+            status: {type: "select", label: "Status", options: options.purchase_order_status.data, value: data.status},
+            team: {type: "select", label: "Team", options: options.team.data, value: data.team},
+            links: {type: "links", label: "Links", value: data.links},
         }
 }, (form_result, update_form) => {
         REQUESTS.post(`/api/db/purchase_order/${data.id}`, {fields: {
@@ -23,6 +24,7 @@ function show_edit_form(data, read_only = false) {
             description: form_result.description,
             status: form_result.status,
             team: form_result.team,
+            links: form_result.links,
         }}, (err, post_result) => {
             if(err) {
                 update_form(err);
@@ -63,6 +65,14 @@ function show_view_form(data) {
     show_edit_form(data, true);
 }
 
+function show_docs_form(data) {
+    let docs_form = add_docs_management("purchase_order", data.id, "documents", data.documents, () => {
+        DOM.destroy(docs_form);
+        load_datatable();
+        show_docs_form(data);
+    });
+}
+
 function load_datatable() {
     REQUESTS.get("/api/db/purchase_order", (err, result) => {
         if(err) {
@@ -81,12 +91,15 @@ function load_datatable() {
                 {type: "text", text: result[id].fields.code, name: "code"},
                 {type: "text", text: result[id].fields.description, name: "description"},
                 {type: "text", text: result[id].fields.status, name: "status", hidden: true},
-                {type: "text", text: options_status[result[id].fields.status], name: "status_name", hidden: false},
+                {type: "text", text: options.purchase_order_status.data[result[id].fields.status], name: "status_name", hidden: false},
                 {type: "text", text: result[id].fields.team, name: "team", hidden: true},
-                {type: "text", text: options_team[result[id].fields.team], name: "team_name"},
+                {type: "text", text: options.team.data[result[id].fields.team], name: "team_name"},
+                {type: "linklist", name: "links", list: result[id].fields.links},
+                {type: "doclist", name: "documents", docs: result[id].fields.documents, baseurl: `/api/db/purchase_order/${id}/download/documents`},
                 {type: "actions", actions: [
                     {label: "🔍", description: "View", action: show_view_form },
                     {label: "🖋️", description: "Edit", action: show_edit_form },
+                    {label: "📄", description: "Manage Docs", action: show_docs_form },
                     {label: "☠️", description: "Delete", action: show_delete_form },
                 ]},
             ];
@@ -95,7 +108,7 @@ function load_datatable() {
 
         let table = {
             caption: "List of POs",
-            head: ["Code", "Description", "Status", "Team", "Actions"],
+            head: ["Code", "Description", "Status", "Team", "Links", "Docs", "Actions"],
             body: table_data,
             filters: [ "code", "description", "status_name", "team_name"],
         }
@@ -105,87 +118,32 @@ function load_datatable() {
     });
 }
 
-function load_status() {
-    REQUESTS.get("/api/db/purchase_order_status", (err, result) => {
-        if(err) {
-            DOM.message("Error", `Error loading status: ${err}`);
-        }
-        else if("error" in result)
-            DOM.message("Error", `Error loading status: ${result.error}`);
-
-        status = result;
-        options_status = {};
-        for(let status_id in status)
-            options_status[status_id] = status[status_id].fields.name;
-
-        if(status && team) {
-            load_datatable();
-        }
-    });
-}
-
-function load_teams() {
-    REQUESTS.get("/api/db/team", (err, result) => {
-        if(err) {
-            DOM.message("Error", `Error loading teams: ${err}`);
-        }
-        else if("error" in result)
-            DOM.message("Error", `Error loading teams: ${result.error}`);
-
-        team = result;
-        options_team = {};
-        for(let team_id in team)
-            options_team[team_id] = team[team_id].fields.name;
-
-        if(status && team) {
-            load_datatable();
-        }
-    });
-}
-
 function main() {
     DOM.get_id("menu_po").style.fontWeight = "bold";
 
-    load_teams();
-    load_status();
+    load_options(options, load_datatable);
 
     let new_button = DOM.get_id("new_element");
 
     DOM.add_text(new_button, "New PO");
     new_button.addEventListener("click", () => {
         DOM.add_form({
-            title: "New Location",
+            title: "New PO",
             submit_label: "Create",
             fields: {
-                name: {type: "string", label: "Name", value: ""},
                 code: {type: "string", label: "Code", value: ""},
-                description: {type: "string", label: "Description", value: ""},
-                address: {type: "string", label: "Address", value: ""},
-                city: {type: "string", label: "City", value: ""},
-                state: {type: "string", label: "State", value: ""},
-                country: {type: "string", label: "Country", value: ""},
-                zip: {type: "string", label: "ZIP", value: ""},
-                contact_name: {type: "string", label: "Contact Name", value: ""},
-                contact_email: {type: "string", label: "Contact e-mail", value: ""},
-                contact_phone: {type: "string", label: "Contact Phone", value: ""},
-                category: {type: "select", label: "Category", options: options_category, value: ""},
-                region: {type: "select", label: "Region", options: options_region, value: ""},
-            }
+                description: {type: "multistring", label: "Description", value: ""},
+                status: {type: "select", label: "Status", options: options.purchase_order_status.data, value: ""},
+                team: {type: "select", label: "Team", options: options.team.data, value: ""},
+                links: {type: "links", label: "Links", value: []},
+                }
         }, (form_result, update_form) => {
-            REQUESTS.post("/api/db/location", {
-                name: form_result.name,
+            REQUESTS.post("/api/db/purchase_order", {
                 code: form_result.code,
                 description: form_result.description,
-                address: form_result.address,
-                city: form_result.city,
-                state: form_result.state,
-                country: form_result.country,
-                zip: form_result.zip,
-                contact_name: form_result.contact_name,
-                contact_email: form_result.contact_email,
-                contact_phone: form_result.contact_phone,
-                category: form_result.category,
-                region: form_result.region,
+                status: form_result.status,
+                team: form_result.team,
+                links: form_result.links,
             }, (err, post_result) => {
                 if(err) {
                     update_form(err);

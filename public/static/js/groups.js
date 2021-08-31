@@ -6,6 +6,8 @@ const PERMISSIONS = {
     assets_rw: "Assets RW",
     users_ro: "Users RO",
     users_rw: "Users RW",
+    devices_ro: "Devices RO",
+    devices_rw: "Devices RW",
 }
 
 function show_edit_form(data) {

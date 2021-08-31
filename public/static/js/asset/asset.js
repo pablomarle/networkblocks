@@ -1,9 +1,11 @@
 let options = {
-    product: {field: "name", data: null},
-    location: {field: "code", data: null},
-    team: {field: "name", data: null},
-    purchase_order: {field: "code", data: null},
-    currency: {field: "code", data: null},
+    product: {field: "name", data: null },
+    location: {field: "code", data: null },
+    team: {field: "name", data: null, null_allowed: true },
+    purchase_order: {field: "code", data: null, null_allowed: true },
+    currency: {field: "code", data: null },
+    device: {field: "name", data: null, null_allowed: true },
+    rack: {field: "name", data: null, null_allowed: true },
 }
 
 function show_edit_form(data, read_only = false) {
@@ -20,6 +22,7 @@ function show_edit_form(data, read_only = false) {
             product: {type: "select", label: "Product", options: options.product.data, value: data.product},
             location: {type: "select", label: "Location", options: options.location.data, value: data.location},
             owner: {type: "select", label: "Owner", options: options.team.data, value: data.owner},
+            rack: {type: "select", label: "Rack", options: options.rack.data, value: data.rack},
             purchase_order: {type: "select", label: "PO", options: options.purchase_order.data, value: data.purchase_order},
             value: {type: "string", label: "Value", value: data.value},
             currency: {type: "select", label: "Currency", options: options.currency.data, value: data.currency},
@@ -32,9 +35,11 @@ function show_edit_form(data, read_only = false) {
             product: form_result.product,
             location: form_result.location,
             owner: form_result.owner,
+            rack: form_result.rack,
             purchase_order: form_result.purchase_order,
             value: parseFloat(form_result.value),
             currency: form_result.currency,
+            links: form_result.links,
         }}, (err, post_result) => {
             if(err) {
                 update_form(err);
@@ -44,7 +49,7 @@ function show_edit_form(data, read_only = false) {
             else {
                 update_form();
                 load_datatable();
-                DOM.message("Asset Updated", `Asset ${data.seria_number} updated`);
+                DOM.message("Asset Updated", `Asset ${post_result.fields.serial_number} updated`);
             }
         })
     }, read_only);
@@ -75,6 +80,14 @@ function show_view_form(data) {
     show_edit_form(data, true);
 }
 
+function show_docs_form(data) {
+    let docs_form = add_docs_management("asset", data.id, "documents", data.documents, () => {
+        DOM.destroy(docs_form);
+        load_datatable();
+        show_docs_form(data);
+    });
+}
+
 function load_datatable() {
     REQUESTS.get("/api/db/asset", (err, result) => {
         if(err) {
@@ -98,15 +111,19 @@ function load_datatable() {
                 {type: "text", text: options.location.data[result[id].fields.location], name: "location_name"},
                 {type: "text", text: result[id].fields.owner, name: "owner", hidden: true},
                 {type: "text", text: options.team.data[result[id].fields.owner], name: "owner_name"},
+                {type: "text", text: result[id].fields.rack, name: "rack", hidden: true},
+                {type: "text", text: options.rack.data[result[id].fields.rack], name: "rack_name"},
                 {type: "text", text: result[id].fields.purchase_order, name: "purchase_order", hidden: true},
                 {type: "text", text: options.purchase_order.data[result[id].fields.purchase_order], name: "purchase_order_name"},
                 {type: "text", text: result[id].fields.value, name: "value", hidden: true},
                 {type: "text", text: result[id].fields.currency, name: "currency", hidden: true},
                 {type: "text", text: `${result[id].fields.value} ${options.currency.data[result[id].fields.currency]}`, name: "value_name"},
                 {type: "linklist", name: "links", list: result[id].fields.links},
+                {type: "doclist", name: "documents", docs: result[id].fields.documents, baseurl: `/api/db/asset/${id}/download/documents`},
                 {type: "actions", actions: [
                     {label: "🔍", description: "View", action: show_view_form },
                     {label: "🖋️", description: "Edit", action: show_edit_form },
+                    {label: "📄", description: "Manage Docs", action: show_docs_form },
                     {label: "☠️", description: "Delete", action: show_delete_form },
                 ]},
             ];
@@ -115,9 +132,9 @@ function load_datatable() {
 
         let table = {
             caption: "List of Assets",
-            head: ["Serial Number", "MAC Address", "Product", "Location", "Owner", "PO", "Value", "Links", "Actions"],
+            head: ["Serial Number", "MAC Address", "Product", "Location", "Owner", "Rack", "PO", "Value", "Links", "Docs", "Actions"],
             body: table_data,
-            filters: [ "serial_number", "mac_address", "product_name", "location_name", "owner_name", "purchase_order_name"],
+            filters: [ "serial_number", "mac_address", "product_name", "location_name", "owner_name", "rack_name", "purchase_order_name"],
         }
 
         //DOM.add_table_data(DOM.get_id("usertable_body"), table_data);
@@ -125,37 +142,10 @@ function load_datatable() {
     });
 }
 
-function load_option(key, callback) {
-    REQUESTS.get(`/api/db/${key}`, (err, result) => {
-        if(err) {
-            DOM.message("Error", `Error loading ${key}: ${err}`);
-        }
-        else if("error" in result)
-            DOM.message("Error", `Error loading ${key}: ${result.error}`);
-
-        options[key].data = {};
-        for(let id in result)
-            options[key].data[id] = result[id].fields[options[key].field];
-
-        for(let key in options) {
-            if(options[key].data === null)
-                return;
-        }
-
-        callback();
-    });
-}
-
-function load_options(callback) {
-    for(let key in options) {
-        load_option(key, callback);
-    }
-}
-
 function main() {
     DOM.get_id("menu_asset").style.fontWeight = "bold";
 
-    load_options(load_datatable);
+    load_options(options, load_datatable);
 
     let new_button = DOM.get_id("new_element");
 
@@ -173,7 +163,8 @@ function main() {
                 purchase_order: {type: "select", label: "PO", options: options.purchase_order.data, value: ""},
                 value: {type: "string", label: "Value", value: ""},
                 currency: {type: "select", label: "Currency", options: options.currency.data, value: ""},
-               }
+                links: {type: "links", label: "Links", value: []},
+            }
         }, (form_result, update_form) => {
             if(isNaN(form_result.value) || (form_result.value < 0)) {
                 update_form("Value must be a positive number.");
@@ -189,6 +180,7 @@ function main() {
                 purchase_order: form_result.purchase_order,
                 value: parseFloat(form_result.value),
                 currency: form_result.currency,
+                links: form_result.links,
             }, (err, post_result) => {
                 if(err) {
                     update_form(err);

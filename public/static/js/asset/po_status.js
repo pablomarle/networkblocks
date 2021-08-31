@@ -4,10 +4,10 @@ function show_edit_form(data) {
         submit_label: "Update",
         fields: {
             name: {type: "string", label: "Name", value: data.name},
-            description: {type: "string", label: "Description", value: data.description},
+            description: {type: "multistring", label: "Description", value: data.description},
         }
     }, (form_result, update_form) => {
-        REQUESTS.post(`/api/db/location_category/${data.id}`, {fields: {
+        REQUESTS.post(`/api/db/purchase_order_status/${data.id}`, {fields: {
             name: form_result.name,
             description: form_result.description,
         }}, (err, post_result) => {
@@ -19,7 +19,7 @@ function show_edit_form(data) {
             else {
                 update_form();
                 load_datatable();
-                DOM.message("Category Updated", `Location Category ${data.name} updated`);
+                DOM.message("Status Updated", `PO Status ${data.name} updated`);
             }
         })
     })
@@ -31,7 +31,7 @@ function show_delete_form(data) {
         submit_label: "Delete",
         fields: {}
     }, (form_result, update_form) => {
-        REQUESTS.delete(`/api/db/location_category/${data.id}`, {}, (err, post_result) => {
+        REQUESTS.delete(`/api/db/purchase_order_status/${data.id}`, {}, (err, post_result) => {
             if(err) {
                 update_form(err);
             }
@@ -40,20 +40,20 @@ function show_delete_form(data) {
             else {
                 update_form();
                 load_datatable();
-                DOM.message("Category deleted", `Location category ${data["name"]} deleted.`);
+                DOM.message("Status deleted", `PO status ${data["name"]} deleted.`);
             }
         })
     })
 }
 
 function load_datatable() {
-    REQUESTS.get("/api/db/location_category", (err, result) => {
+    REQUESTS.get("/api/db/purchase_order_status", (err, result) => {
         if(err) {
-            DOM.message("Error in Location Category", err, true);
+            DOM.message("Error in PO Status", err, true);
             return;
         }
         else if("error" in result) {
-            DOM.message("Error getting Location Categories", result["error"], true);
+            DOM.message("Error getting PO Status", result["error"], true);
             return;
         }
 
@@ -72,7 +72,7 @@ function load_datatable() {
         }
 
         let table = {
-            caption: "List of Location Categories",
+            caption: "List of Purchase Order Status",
             head: ["Name", "Description", "Actions"],
             body: table_data,
             filters: [ "name", "description"],
@@ -84,23 +84,23 @@ function load_datatable() {
 }
 
 function main() {
-    DOM.get_id("menu_category").style.fontWeight = "bold";
+    DOM.get_id("menu_po_status").style.fontWeight = "bold";
 
     load_datatable();
 
     let new_button = DOM.get_id("new_element");
 
-    DOM.add_text(new_button, "New Category");
+    DOM.add_text(new_button, "New Status");
     new_button.addEventListener("click", () => {
         DOM.add_form({
-            title: "New Category",
+            title: "New Status",
             submit_label: "Create",
             fields: {
                 name: {type: "string", label: "Name", value: ""},
-                description: {type: "string", label: "Description", value: ""},
+                description: {type: "multistring", label: "Description", value: ""},
             }
         }, (form_result, update_form) => {
-            REQUESTS.post("/api/db/location_category", {
+            REQUESTS.post("/api/db/purchase_order_status", {
                 name: form_result.name,
                 description: form_result.description,
             }, (err, post_result) => {
@@ -112,7 +112,7 @@ function main() {
                 else {
                     update_form();
                     load_datatable();
-                    DOM.message("New Category", "New location category created successfully.");
+                    DOM.message("New Status", "New PO Status created successfully.");
                 }
             })
         })
