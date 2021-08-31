@@ -12,7 +12,7 @@ Arguments:
 function process_args(args) {
 	let processed_args = {
 		help: false,
-		config: "/etc/networkmaps_manager/config.json"
+		config: "/etc/networkblocks/config.json"
 	};
 	let current_arg_index = 0;
 
