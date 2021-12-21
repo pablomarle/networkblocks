@@ -8,6 +8,8 @@
     "express": "^4.17.1",
     "express-fileupload": "^1.2.1",
     "express-handlebars": "^5.3.2",
-    "nodemailer": "^6.6.3"
+    "nodemailer": "^6.6.3",
+    "nunjucks": "^3.2.3",
+    "vm2": "^3.9.5"
   }
 }

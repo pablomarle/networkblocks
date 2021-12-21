@@ -75,6 +75,16 @@ const DOM = {
         return input;
     },
 
+    add_listitem: (e, text, id, class_name) => {
+        let l = DOM.add_element(e, "li", text, id, class_name);
+        return l; 
+    },
+
+    add_list: (e, id, class_name) => {
+        let l = DOM.add_element(e, "ul", null, id, class_name);
+        return l; 
+    },
+
     add_file: (e, name, id, class_name) => {
         let input = DOM.add_element(e, "input", null, id, class_name);
         input.type = "file";
@@ -97,12 +107,18 @@ const DOM = {
         return button;
     },
 
-    add_select: (e, options, value, id, class_name) => {
+    add_select: (e, options, value, id, class_name, sorted=true) => {
         let select = DOM.add_element(e, "select", null, id, class_name);
-        for(let option_id in options) {
+        let id_list = Object.keys(options);
+        if(sorted) {
+            id_list.sort((a,b) => (options[a] > options[b]) ? 1 : -1 )
+        }
+
+        for(let option_id of id_list) {
             let option = DOM.add_element(select, "option", options[option_id]);
             option.value = option_id;
         }
+
         select.value = value;
         return select;
     },
@@ -488,5 +504,37 @@ const DOM = {
         setTimeout(() => {
             DOM.destroy(container);
         }, 3000)
+    },
+
+    navbar_click: (nav_data, element) => {
+        nav_data.elements.splice(nav_data.elements.indexOf(element) + 1, nav_data.elements.length);
+        DOM.navbar_draw(nav_data);
+        nav_data.callback(element);
+    },
+
+    navbar_draw: (nav_data) => {
+        DOM.empty(nav_data.dom_parent);
+        let dom_list = DOM.add_list(nav_data.dom_parent, null, "nav_bar");
+        for(let element of nav_data.elements) {
+            let dom_element = DOM.add_listitem(dom_list, element);
+            dom_element.addEventListener("click", (ev) => {
+                DOM.navbar_click(nav_data, element);
+            })
+        }
+    },
+
+    navbar_create: (dom_parent, root_text, callback) => {
+        let nav_data = {
+            callback: callback,
+            elements: [root_text],
+            dom_parent: dom_parent,
+        }
+        DOM.navbar_draw(nav_data);
+        return nav_data;
+    },
+
+    navbar_add: (nav_data, text) => {
+        nav_data.elements.push(text);
+        DOM.navbar_draw(nav_data);
     },
 }

@@ -57,6 +57,18 @@ html,body {
     margin: 5px;
 }
 
+.nav_bar {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+.nav_bar li {
+    margin:8px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 #content {
     display: flex;
     flex-direction: row;
@@ -143,6 +155,7 @@ button {
     border-radius: 4px;
     box-shadow: 2px 2px #aaa;
     background: linear-gradient(135deg, rgb(171,226,255) 0%, rgb(29,182,255) 100%);
+    cursor: pointer;
 }
 button:hover {
     background: #ddd;

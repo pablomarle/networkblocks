@@ -20,6 +20,7 @@ function show_edit_form(data, read_only = false) {
             serial_number: {type: "string", label: "SN", value: data.serial_number},
             mac_address: {type: "string", label: "MAC Address", value: data.mac_address},
             product: {type: "select", label: "Product", options: options.product.data, value: data.product},
+            device: {type: "select", label: "Device", options: options.device.data, value: data.device},
             location: {type: "select", label: "Location", options: options.location.data, value: data.location},
             owner: {type: "select", label: "Owner", options: options.team.data, value: data.owner},
             rack: {type: "select", label: "Rack", options: options.rack.data, value: data.rack},
@@ -34,6 +35,7 @@ function show_edit_form(data, read_only = false) {
             serial_number: form_result.serial_number,
             mac_address: form_result.mac_address,
             product: form_result.product,
+            device: form_result.device,
             location: form_result.location,
             owner: form_result.owner,
             rack: form_result.rack,
@@ -59,7 +61,7 @@ function show_edit_form(data, read_only = false) {
 
 function show_delete_form(data) {
     DOM.add_form({
-        title: `Delete ${data["seria_number"]}?`,
+        title: `Delete ${data["serial_number"]}?`,
         submit_label: "Delete",
         fields: {}
     }, (form_result, update_form) => {
@@ -109,6 +111,8 @@ function load_datatable() {
                 {type: "text", text: result[id].fields.mac_address, name: "mac_address"},
                 {type: "text", text: result[id].fields.product, name: "product", hidden: true},
                 {type: "text", text: options.product.data[result[id].fields.product], name: "product_name"},
+                {type: "text", text: result[id].fields.device, name: "device", hidden: true},
+                {type: "text", text: options.device.data[result[id].fields.device], name: "device_name"},
                 {type: "text", text: result[id].fields.location, name: "location", hidden: true},
                 {type: "text", text: options.location.data[result[id].fields.location], name: "location_name"},
                 {type: "text", text: result[id].fields.owner, name: "owner", hidden: true},
@@ -117,16 +121,14 @@ function load_datatable() {
                 {type: "text", text: options.rack.data[result[id].fields.rack], name: "rack_name"},
                 {type: "text", text: result[id].fields.rack_u, name: "rack_u", hidden: true},
                 {type: "text", text: result[id].fields.purchase_order, name: "purchase_order", hidden: true},
-                {type: "text", text: options.purchase_order.data[result[id].fields.purchase_order], name: "purchase_order_name"},
+                {type: "text", text: options.purchase_order.data[result[id].fields.purchase_order], name: "purchase_order_name", hidden: true},
                 {type: "text", text: result[id].fields.value, name: "value", hidden: true},
                 {type: "text", text: result[id].fields.currency, name: "currency", hidden: true},
-                {type: "text", text: `${result[id].fields.value} ${options.currency.data[result[id].fields.currency]}`, name: "value_name"},
-                {type: "linklist", name: "links", list: result[id].fields.links},
-                {type: "doclist", name: "documents", docs: result[id].fields.documents, baseurl: `/api/db/asset/${id}/download/documents`},
+                {type: "text", text: `${result[id].fields.value} ${options.currency.data[result[id].fields.currency]}`, name: "value_name", hidden: true},
+                {type: "linklist", name: "links", list: result[id].fields.links, hidden: true},
                 {type: "actions", actions: [
                     {label: "🔍", description: "View", action: show_view_form },
                     {label: "🖋️", description: "Edit", action: show_edit_form },
-                    {label: "📄", description: "Manage Docs", action: show_docs_form },
                     {label: "☠️", description: "Delete", action: show_delete_form },
                 ]},
             ];
@@ -135,9 +137,9 @@ function load_datatable() {
 
         let table = {
             caption: "List of Assets",
-            head: ["Serial Number", "MAC Address", "Product", "Location", "Owner", "Rack", "PO", "Value", "Links", "Docs", "Actions"],
+            head: ["Serial Number", "MAC Address", "Product", "Device", "Location", "Owner", "Rack", "Actions"],
             body: table_data,
-            filters: [ "serial_number", "mac_address", "product_name", "location_name", "owner_name", "rack_name", "purchase_order_name"],
+            filters: [ "serial_number", "mac_address", "product_name", "device_name", "location_name", "owner_name", "rack_name"],
         }
 
         //DOM.add_table_data(DOM.get_id("usertable_body"), table_data);

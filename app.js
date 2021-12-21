@@ -3,7 +3,9 @@ const expressHandlebars = require('express-handlebars')
 const cookieParser = require('cookie-parser')
 const user = require('./lib/user')
 const webdb = require('./lib/webdb')
+const ipam = require('./lib/ipam')
 const tools = require('./lib/tools')
+const ip = require('./lib/ip')
 
 let data = {
     app: null,
@@ -175,11 +177,25 @@ function setup_routes() {
     }));
 
     // IPAM URLS
-    data.app.get('/ip', (req, res) => res.render("not_implemented", {
+    data.app.get('/ip', (req, res) => res.render("ipam", {
         title: "NetworkBlocks IPAM",
-        custom_js: ["dom.js", "tools.js"],
+        custom_js: ["dom.js", "tools.js", "ipam/ip.js"],
         session: user.get_session_data(req),
     }));
+
+    data.app.get('/ip/function', (req, res) => res.render("ipam", {
+        title: "NetworkBlocks Network Functions",
+        custom_js: ["dom.js", "tools.js", "ipam/ipam_function.js"],
+        session: user.get_session_data(req),
+    }));
+
+    data.app.get('/ip/tree', (req, res) => {
+        let u = user.is_user_allowed(req, ["ipam_ro", "ipam_rw"]);
+        if(!u)
+            return res.status(403).json({error: "You are not authorized."});
+
+        return res.status(200).json({data: ipam.ipam_tree})
+    })
 
     user.setup_routes(data.app);
     webdb.setup_routes(data.app);
@@ -206,10 +222,16 @@ function setup_error_handling() {
     })
 }
 
+function test_post_process(action, key, element_id, element, old_element) {
+    console.log(`Post process called on ${key} ${element_id}. Action: ${action}`)
+}
+
 function start_app(config) {
     data.config = config;
     user.initialize(config);
     webdb.initialize(config, user);
+    webdb.add_external_postprocess("network", ipam.post_processor);
+    ipam.initialize(webdb.db());
 
     data.app = express()
 

@@ -54,6 +54,7 @@ const REQUESTS = {
         })
         .then(data => { if(data) callback(null, data) })
         .catch((error) => {
+            console.log(error)
             callback(error)
         });    
     },
@@ -321,3 +322,6 @@ function load_options(options, callback) {
     }
 }
 
+function compressIPV6(input) {
+    return input.replace(/\b(?:0+:){2,}/, ':');
+}

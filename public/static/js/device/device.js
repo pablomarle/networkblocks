@@ -7,6 +7,7 @@ let options = {
     device_function: {field: "name", data: null, null_allowed: false },
     team: {field: "name", data: null, null_allowed: false },
     device_status: {field: "name", data: null, null_allowed: false },
+    asset: {field: "serial_number", data: null, null_allowed: false },
 }
 let osversion_options = {};
 
@@ -75,7 +76,29 @@ function show_delete_form(data) {
 }
 
 function show_view_form(data) {
-    show_edit_form(data, true);
+    let title = data.name;
+
+    let asset_list = [];
+    for(let asset_id in options.asset.full_data) {
+        if(options.asset.full_data[asset_id].fields.device === data.id) {
+            asset_list.push(options.asset.data[asset_id]);
+        }
+    };
+    DOM.add_form({
+        title: title,
+        submit_label: "Update",
+        fields: {
+            name: {type: "string", label: "Name", value: data.name},
+            mgmt_ip: {type: "string", label: "MGMT IP", value: data.mgmt_ip},
+            environment: {type: "select", label: "Environment", options: options.environment.data, value: data.environment},
+            function: {type: "select", label: "Function", options: options.device_function.data, value: data.function},
+            owner: {type: "select", label: "Owner", options: options.team.data, value: data.owner},
+            status: {type: "select", label: "Status", options: options.device_status.data, value: data.status},
+            os_version: {type: "select", label: "OS Version", options: osversion_options, value: data.os_version},
+            assets: {type: "string", label: "Assets", value: asset_list},
+            links: {type: "links", label: "Links", value: data.links},
+        }
+    }, null, true);
 }
 
 function show_docs_form(data) {
